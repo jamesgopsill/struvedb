@@ -18,7 +18,7 @@ impl Document<User> for User {
     /// A fcn that needs to be satisfied to prevent any clashes
     /// Can contain as many checks as you like.
     /// E.g., unique fields.
-    fn does_not_clash(&self, doc: &User) -> Result<(), &str> {
+    fn intersects(&self, doc: &User) -> Result<(), &str> {
         if self.name == doc.name {
             return Err("Name is already in use.");
         }
@@ -38,11 +38,12 @@ impl User {
 fn main() {
     // Provide a file if you want persistence storage
     let mut fp = std::env::current_dir().unwrap();
-    fp.push("my_users.col");
+    fp.push("collections");
+    fp.push("users");
 
     // Create the collection and specify the max_byte_size
     // and file if you wish to persist the data
-    let mut users = Collection::<User>::new(Some(fp), None);
+    let mut users = Collection::<User>::new(Some(fp));
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);
