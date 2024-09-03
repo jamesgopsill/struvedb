@@ -6,7 +6,7 @@ use argon2::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use struvedb::{Collection, Document};
+use struvedb::{DirBasedCollection, Document};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -38,7 +38,7 @@ impl Document<User> for User {
         self.uuid.clone()
     }
 
-    fn does_not_clash(&self, doc: &User) -> Result<(), &str> {
+    fn intersects(&self, doc: &User) -> Result<(), &str> {
         if self.email == doc.email {
             return Err("Email is already in use.");
         }
@@ -71,10 +71,11 @@ impl User {
 fn main() {
     // Provide a file if you want persistence storage
     let mut fp = std::env::current_dir().unwrap();
-    fp.push("users.col");
+    fp.push("collections");
+    fp.push("users");
 
     // Create the collection
-    let mut user_collection = Collection::<User>::new(Some(fp), None);
+    let mut user_collection = DirBasedCollection::<User>::new(fp);
 
     let user = User::new(
         "example".to_string(),

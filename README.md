@@ -1,23 +1,49 @@
 # `struvedb` - A minimal in-memory with persistance struct vec document collection store.
 
-`struvedb` is a minimal wrapper around a vec of structs in Rust that provides flat file persistence. Updates are persisted on inserts and updates and file modifications are at the per struct level to minimise I/O. This is unlike polling mechanisms that typically write the entire DB to file every few minutes.
+`struvedb` is a minimal wrapper around a vecs and hashmaps of structs in Rust that provides in-memory, directory-based persitent, and file-based persistent collections. Updates are persisted on inserts and updates and file modifications are at the per struct level to minimise I/O. This is unlike polling mechanisms that typically write the entire DB to disk every few minutes.
 
 I created it as a I needed minimal DB like querying and persistence when making demonstrators for my research and innovation projects.
 
-### Features
+## Document
 
-- Flat file persistance. Each struct is stored on a separate line. `max_byte_length` dictates how large a struct can become. I use this to conveniently identify the file write offest for struct updates and padding up to that length with spaces. You'll see this if you open up the flat file.
+You can design a document to meet your data needs. All it requires an implementation of `get_primary_key` and `intersects`. The `intersects` fcn provides a simple mechanism to implement any checks that would invalidate the insert or update of an document. For example, not having duplicate emails for different users.
+
+## Collection Types
+
+The crate features three collections that can fit many demonstrator needs. All collections implement `::new` and `::new_arc`. The latter is useful for multi-threaded/async applications. Querys use the Rust filter and find logic. Results are cloned out. Any changes need to be made by passing an updated struct through the update function.
+
+### `InMemoryCollection`
+
+The data does not persist if the applicaiton closes. Provides the same interface as the other collections so it can be easily swapped during development. 
+
+#### Use Cases
+
+Good for testing and demos that do not need the data after running.
+
+### `FileBasedCollection`
+
+The file-based collection stores the data in a single file on disk. Each struct is stored on a separate line. `max_byte_length` dictates how large a struct can become. I use this to conveniently identify the file write offset for struct updates and padding up to that length with spaces. You'll see this if you open up the file. There is minimal I/O with no polling/regular dumps of the in-memory db to a file. Updates are persisted as they are submitted.
+
+- `fp` PathBuff detailing where you want to store the data.
 - `max_byte_length` is dynamically controlled and will increment a default of `128` or a user specified amount when an object goes beyond the limit.
-- Querys use the Rust filter and find logic. Results are cloned out. Any changes need to be made by passing an updated struct through the update function.
-- Delete function to remove a struct from the DB.
-- `does_not_clash` trait fcn to provide uniqueness checks.
-- Minimal I/O. No polling/regular dumps of the in-memory db to a file. Updates are persisted as they are submitted.
-- `Collection::new` and `Collection::new_arc` to instantiate a collection. The latter is useful for multi-threaded/async applications.
+
+#### Use Cases
+
+Good for data that is unlikely to be updated and structs are a fixed size. Demos where there may be lots of inserts that would result in many thousands of files if the directory-based approach was chosen. E.g., IoT demonstrators.
+
+### `DirBasedCollection`
+
+The directory based collection stores each struct instance in its own file within the directory. This can be space efficient when struct instances vary considerably in size.
+
+#### Use Cases
+
+I use this for demonstrator user accounts.
 
 ### Roadmap
 
 - More testing.
 - Make a YouTube video.
+- Batch updates where they succeed only if all succeed.
 
 ## Getting started
 
@@ -31,16 +57,19 @@ struvedb = { git = "https://github.com/jamesgopsill/struvedb" }
 There are a couple of examples in the `examples` folder that can be run using:
 
 ```bash
-> cargo run --example [demo|user]
+> cargo run --example dir_demo.rs
 ```
 
 in your terminal.
 
-Below is the `examples/demo.rs` example.
+### Examples
+
+More can be found in the `examples` folder.
+
 
 ```rust
 use serde::{Deserialize, Serialize};
-use struvedb::{Collection, Document};
+use struvedb::{DirBasedCollection, Document};
 use uuid::Uuid;
 
 /// The struct we want to manage in struvecdb
@@ -59,7 +88,7 @@ impl Document<User> for User {
     /// A fcn that needs to be satisfied to prevent any clashes
     /// Can contain as many checks as you like.
     /// E.g., unique fields.
-    fn does_not_clash(&self, doc: &User) -> Result<(), &str> {
+    fn intersects(&self, doc: &User) -> Result<(), &str> {
         if self.name == doc.name {
             return Err("Name is already in use.");
         }
@@ -79,11 +108,11 @@ impl User {
 fn main() {
     // Provide a file if you want persistence storage
     let mut fp = std::env::current_dir().unwrap();
-    fp.push("my_users.col");
+    fp.push("collections");
+    fp.push("users");
 
-    // Create the collection and specify the max_byte_size
-    // and file if you wish to persist the data
-    let mut users = Collection::<User>::new(Some(fp), None);
+    // Create the collection and pass the dir.
+    let mut users = DirBasedCollection::<User>::new(fp);
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);
@@ -103,7 +132,6 @@ fn main() {
     println!("{:?}", a_user);
     users.update(a_user).unwrap();
 }
-
 ```
 
 
