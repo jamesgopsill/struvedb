@@ -6,7 +6,7 @@ use argon2::{
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use struvedb::{DirBasedCollection, Document};
+use struvedb::{Collection, CollectionBackend, Document};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -75,7 +75,7 @@ fn main() {
     fp.push("users");
 
     // Create the collection
-    let mut user_collection = DirBasedCollection::<User>::new(fp);
+    let mut user_collection = Collection::<User>::new(CollectionBackend::Dir, Some(fp));
 
     let user = User::new(
         "example".to_string(),

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use struvedb::{Document, FileBasedCollection};
+use struvedb::{Collection, CollectionBackend, Document};
 use uuid::Uuid;
 
 /// The struct we want to manage in struvecdb
@@ -43,7 +43,7 @@ fn main() {
 
     // Create the collection and specify the max_byte_size
     // and file if you wish to persist the data
-    let mut users = FileBasedCollection::<User>::new(fp, None);
+    let mut users = Collection::<User>::new(CollectionBackend::File, Some(fp));
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);

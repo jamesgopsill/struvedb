@@ -9,3 +9,4 @@ serde = { version = "1.0.203",  features = ["derive"] }
 serde_json = { version = "1.0.117" }
 chrono = { version = "0.4.38", features = ["serde"] }
 argon2 = { version = "0.5.3" }
+indexmap = "2.5.0"

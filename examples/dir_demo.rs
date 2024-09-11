@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use struvedb::{DirBasedCollection, Document};
+use struvedb::{Collection, CollectionBackend, Document};
 use uuid::Uuid;
 
 /// The struct we want to manage in struvecdb
@@ -42,7 +42,7 @@ fn main() {
     fp.push("users");
 
     // Create the collection and pass the dir.
-    let mut users = DirBasedCollection::<User>::new(fp);
+    let mut users = Collection::<User>::new(CollectionBackend::Dir, Some(fp));
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);

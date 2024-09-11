@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use struvedb::{Document, InMemoryCollection};
+use struvedb::{Collection, CollectionBackend, Document};
 use uuid::Uuid;
 
 /// The struct we want to manage in struvecdb
@@ -37,7 +37,7 @@ impl User {
 
 fn main() {
     // Create the collection
-    let mut users = InMemoryCollection::<User>::new();
+    let mut users = Collection::<User>::new(CollectionBackend::InMemory, None);
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);

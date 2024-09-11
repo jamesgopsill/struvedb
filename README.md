@@ -8,11 +8,11 @@ I created it as a I needed minimal DB like querying and persistence when making 
 
 You can design a document to meet your data needs. All it requires an implementation of `get_primary_key` and `intersects`. The `intersects` fcn provides a simple mechanism to implement any checks that would invalidate the insert or update of an document. For example, not having duplicate emails for different users.
 
-## Collection Types
+## Collection Backends
 
-The crate features three collections that can fit many demonstrator needs. All collections implement `::new` and `::new_arc`. The latter is useful for multi-threaded/async applications. Querys use the Rust filter and find logic. Results are cloned out. Any changes need to be made by passing an updated struct through the update function.
+The crate features three collection backends that can fit many demonstrator needs. Collection implements `::new` and `::new_arc`. The latter is useful for multi-threaded/async applications. Querys use the Rust filter and find logic. Results are cloned out. Any changes need to be made by passing an updated struct through the update function.
 
-### `InMemoryCollection`
+### `CollectionBackend::InMemory`
 
 The data does not persist if the applicaiton closes. Provides the same interface as the other collections so it can be easily swapped during development. 
 
@@ -20,7 +20,7 @@ The data does not persist if the applicaiton closes. Provides the same interface
 
 Good for testing and demos that do not need the data after running.
 
-### `FileBasedCollection`
+### `CollectionBackend::File`
 
 The file-based collection stores the data in a single file on disk. Each struct is stored on a separate line. `max_byte_length` dictates how large a struct can become. I use this to conveniently identify the file write offset for struct updates and padding up to that length with spaces. You'll see this if you open up the file. There is minimal I/O with no polling/regular dumps of the in-memory db to a file. Updates are persisted as they are submitted.
 
@@ -31,7 +31,7 @@ The file-based collection stores the data in a single file on disk. Each struct 
 
 Good for data that is unlikely to be updated and structs are a fixed size. Demos where there may be lots of inserts that would result in many thousands of files if the directory-based approach was chosen. E.g., IoT demonstrators.
 
-### `DirBasedCollection`
+### `CollectionBackend::Dir`
 
 The directory based collection stores each struct instance in its own file within the directory. This can be space efficient when struct instances vary considerably in size.
 
@@ -69,7 +69,7 @@ More can be found in the `examples` folder.
 
 ```rust
 use serde::{Deserialize, Serialize};
-use struvedb::{DirBasedCollection, Document};
+use struvedb::{Collection, CollectionBackend, Document};
 use uuid::Uuid;
 
 /// The struct we want to manage in struvecdb
@@ -112,7 +112,7 @@ fn main() {
     fp.push("users");
 
     // Create the collection and pass the dir.
-    let mut users = DirBasedCollection::<User>::new(fp);
+    let mut users = Collection::<User>::new(CollectionBackend::Dir, Some(fp));
 
     let user = User::new("demo".to_string());
     println!("{:?}", user);
